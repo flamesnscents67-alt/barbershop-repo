@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dashboard — The Gentlemen's Barber</title>
+<meta name="description" content="Manage customer bookings.">
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Inter:wght@400;600&display=swap">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body data-page="dashboard">
+<div id="site-header"></div>
+<main>
+
+<section class="sec"><div class="wrap">
+<div class="bar" style="justify-content:space-between"><h1 style="margin:0">Dashboard</h1><button class="btn alt sm" id="logout">Log out</button></div>
+<div class="stats">
+<div class="card"><strong id="s-today">0</strong>Today</div><div class="card"><strong id="s-up">0</strong>Upcoming</div>
+<div class="card"><strong id="s-total">0</strong>All bookings</div><div class="card"><strong id="s-rev">Rs 0</strong>Completed revenue</div></div>
+<div class="bar"><input id="f-q" placeholder="Search name, email, phone" aria-label="Search"><input id="f-date" type="date" aria-label="Filter by date">
+<select id="f-status" aria-label="Filter by status"><option value="">All statuses</option><option>confirmed</option><option>completed</option><option>cancelled</option></select>
+<button class="btn alt sm" id="clear">Clear</button></div>
+<div class="scroll"><table><thead><tr><th>When</th><th>Customer</th><th>Service</th><th>Notes</th><th>Status</th><th>Actions</th></tr></thead><tbody id="rows"></tbody></table></div>
+</div></section>
+</main>
+<div id="site-footer"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="js/config.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
