@@ -34,15 +34,18 @@ if(pl||sl)loadServices().then(function(r){
  
 /* BOOK */
 if(page==="book"){
- var n0=nowPK(),st={svc:null,date:null,time:null,y:n0.y,m:n0.m,booked:[],busy:false,req:0};
+ var n0=nowPK(),st={svcs:[],date:null,time:null,y:n0.y,m:n0.m,booked:[],busy:false,req:0};
  
  var sBox=$("#svc-list"),cal=$("#cal"),tBox=$("#times"),form=$("#book-form"),out=$("#book-msg"),submit=form.querySelector("button[type=submit]");
  function slots(){
   var d=st.date.split("-"),out=[];if(new Date(d[0],d[1]-1,d[2]).getDay()===0)return out;var n=nowPK();
-  for(var t=SHOP.open*60;t+st.svc.min<=SHOP.close*60;t+=SHOP.step){
-   var ok=!(n.date===st.date&&t<=n.mins)&&!st.booked.some(function(r){return t<r[1]&&t+st.svc.min>r[0]});out.push({t:hm(t),ok:ok})}
+  for(var t=SHOP.open*60;t+tot()<=SHOP.close*60;t+=SHOP.step){
+   var ok=!(n.date===st.date&&t<=n.mins)&&!st.booked.some(function(r){return t<r[1]&&t+tot()>r[0]});out.push({t:hm(t),ok:ok})}
   return out}
- function rSvc(){sBox.innerHTML=SERVICES.map(function(s,i){return'<button type="button" class="opt'+(st.svc===s?" sel":"")+'" data-i="'+i+'" aria-pressed="'+(st.svc===s)+'"><span>'+esc(s.name)+" \u00b7 "+s.min+' min</span><span class="price">'+priceHtml(s)+"</span></button>"}).join("")}
+ function tot(){return st.svcs.reduce(function(x,s){return x+s.min},0)}
+ function sumP(){return st.svcs.reduce(function(x,s){return x+(s.sale!=null&&s.sale<s.price?s.sale:s.price)},0)}
+ function summary(){return st.svcs.length?'<p class="meta" style="margin-top:8px">Selected: '+st.svcs.length+' \u00b7 '+tot()+' min \u00b7 '+rs(sumP())+'</p>':'<p class="meta" style="margin-top:8px">Tap to select one or more services.</p>'}
+ function rSvc(){sBox.innerHTML=SERVICES.map(function(s,i){return'<button type="button" class="opt'+(st.svcs.indexOf(s)>-1?" sel":"")+'" data-i="'+i+'" aria-pressed="'+(st.svcs.indexOf(s)>-1)+'"><span>'+esc(s.name)+" \u00b7 "+s.min+' min</span><span class="price">'+priceHtml(s)+"</span></button>"}).join("")+summary()}
  function rCal(){
   var first=new Date(st.y,st.m,1),dim=new Date(st.y,st.m+1,0).getDate(),today=nowPK().date;
   var html='<div class="cal-h"><button type="button" class="btn sm alt" id="pv" aria-label="Previous month">&lsaquo;</button><span>'+first.toLocaleDateString("en-GB",{month:"long",year:"numeric"})+'</span><button type="button" class="btn sm alt" id="nx" aria-label="Next month">&rsaquo;</button></div><div class="cal-g">';
@@ -57,36 +60,36 @@ if(page==="book"){
  function rTimes(msg){
   if(msg){tBox.innerHTML='<p class="meta">'+esc(msg)+"</p>";return}
   if(!st.date){tBox.innerHTML='<p class="meta">Select a date first.</p>';return}
-  if(!st.svc){tBox.innerHTML='<p class="meta">Choose a service first.</p>';return}
+  if(!st.svcs.length){tBox.innerHTML='<p class="meta">Choose a service first.</p>';return}
   var s=slots();
   if(!s.length){tBox.innerHTML='<p class="meta">No times available on this date.</p>';return}
   if(!s.some(function(x){return x.ok})){tBox.innerHTML='<p class="meta">Fully booked. Please pick another date.</p>';return}
   tBox.innerHTML='<div class="slots">'+s.map(function(x){return'<button type="button" class="slot'+(st.time===x.t?" sel":"")+'" data-t="'+x.t+'"'+(x.ok?"":" disabled")+">"+x.t+"</button>"}).join("")+"</div>"}
  function loadTimes(){
-  if(!st.date||!st.svc||!sb){rTimes();return Promise.resolve()}
+  if(!st.date||!st.svcs.length||!sb){rTimes();return Promise.resolve()}
   var my=++st.req;rTimes("Loading times\u2026");
   return sb.rpc("get_booked_slots",{p_date:st.date}).then(function(r){
    if(my!==st.req)return;
    if(r.error){rTimes("Could not load times. Please refresh and try again.");return}
    st.booked=(r.data||[]).map(function(x){var s=mins(x.slot_time);return[s,s+x.slot_minutes]});rTimes()})}
- sBox.onclick=function(e){var b=e.target.closest(".opt");if(!b)return;st.svc=SERVICES[+b.dataset.i];st.time=null;rSvc();loadTimes()};
+ sBox.onclick=function(e){var b=e.target.closest(".opt");if(!b)return;var sv=SERVICES[+b.dataset.i],ix=st.svcs.indexOf(sv);if(ix>-1)st.svcs.splice(ix,1);else st.svcs.push(sv);st.time=null;rSvc();loadTimes()};
  cal.onclick=function(e){var b=e.target.closest(".day");if(!b||b.disabled)return;st.date=b.dataset.d;st.time=null;rCal();loadTimes()};
  tBox.onclick=function(e){var b=e.target.closest(".slot");if(!b||b.disabled)return;st.time=b.dataset.t;rTimes()};
  function say(cls,html){out.className="msg "+cls;out.innerHTML=html;out.scrollIntoView({block:"center"})}
  form.onsubmit=function(e){e.preventDefault();if(st.busy)return;
   var name=form.name.value.trim(),email=form.email.value.trim(),phone=form.phone.value.trim();
   if(!sb)return say("err","Online booking is not connected yet.");
-  if(!st.svc)return say("err","Please choose a service.");if(!st.date)return say("err","Please pick a date.");if(!st.time)return say("err","Please pick a time.");
+  if(!st.svcs.length)return say("err","Please choose at least one service.");if(!st.date)return say("err","Please pick a date.");if(!st.time)return say("err","Please pick a time.");
   if(name.length<2)return say("err","Please enter your full name.");
   if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email))return say("err","Please enter a valid email address.");
   if(digits(phone).length<7)return say("err","Please enter a valid phone number.");
   st.busy=true;submit.disabled=true;submit.textContent="Booking\u2026";
-  sb.rpc("create_booking",{p_service:st.svc.name,p_date:st.date,p_time:st.time,p_name:name,p_email:email,p_phone:phone,p_notes:form.notes.value.trim()}).then(function(r){
+  sb.rpc("create_booking",{p_services:st.svcs.map(function(s){return s.name}),p_date:st.date,p_time:st.time,p_name:name,p_email:email,p_phone:phone,p_notes:form.notes.value.trim()}).then(function(r){
    st.busy=false;submit.disabled=false;submit.textContent="Confirm Booking";
    if(r.error){st.time=null;loadTimes();return say("err",esc(r.error.message||"Booking failed. Please try again."))}
-   var ok="<strong>Booking confirmed.</strong> "+esc(st.svc.name)+" on "+esc(pretty(st.date,st.time))+". Use your email and phone in <a href='my-bookings.html'>My Bookings</a> to view or cancel it.";
-   form.reset();st.time=null;st.date=null;rCal();rTimes();say("ok",ok)})};
- loadServices().then(function(r){var q=new URLSearchParams(location.search).get("service");if(q){var f=SERVICES.filter(function(s){return s.name===q})[0];if(f)st.svc=f}if(!SERVICES.length)sBox.innerHTML='<p class="meta">No services available right now.</p>';else rSvc();rCal();loadTimes()})}
+   var ok="<strong>Booking confirmed.</strong> "+esc(st.svcs.map(function(s){return s.name}).join(" + "))+" on "+esc(pretty(st.date,st.time))+". Use your email and phone in <a href='my-bookings.html'>My Bookings</a> to view or cancel it.";
+   form.reset();st.svcs=[];st.time=null;st.date=null;rSvc();rCal();rTimes();say("ok",ok)})};
+ loadServices().then(function(r){var q=new URLSearchParams(location.search).get("service");if(q){var f=SERVICES.filter(function(s){return s.name===q})[0];if(f)st.svcs=[f]}if(!SERVICES.length)sBox.innerHTML='<p class="meta">No services available right now.</p>';else rSvc();rCal();loadTimes()})}
  
 /* MY BOOKINGS */
 if(page==="my-bookings"){
