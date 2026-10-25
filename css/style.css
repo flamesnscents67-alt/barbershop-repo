@@ -50,3 +50,7 @@ footer.site{background:var(--ink);color:#d6d9d4;padding:36px 0;font-size:.92rem;
 footer.site .wrap{display:grid;gap:20px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}footer.site h3{color:#fff}
 footer.site p{margin:2px 0}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+[hidden]{display:none!important}
+.tag.sale{background:#f8e1e1;color:var(--red)}
+s.meta{color:var(--mute)}
+ 
